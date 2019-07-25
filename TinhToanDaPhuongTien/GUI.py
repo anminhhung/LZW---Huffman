@@ -3,8 +3,8 @@ import tkinter.ttk as ttk
 from tkinter import filedialog
 from PIL import Image, ImageTk
 import os
-import huffman
 import LZW
+import huffman
 
 class GUI(Frame):
     def __init__(self, root):
@@ -133,7 +133,7 @@ class GUI(Frame):
             #Huffman coding  
             if (self.algorithmChoose == self.AlgorithmLossLesses[0]):
                 h = huffman.HuffmanCoding()
-                outputPath, fileDic, log = h.compress(self.fileName) 
+                outputPath, log = h.compress(self.fileName) 
 
                 print(log)
                 showLog.delete('1.0', END)
@@ -155,12 +155,11 @@ class GUI(Frame):
         try:
             #Huffman coding        
             if (self.algorithmChoose == self.AlgorithmLossLesses[0]):
-                if (self.algorithmChoose == self.AlgorithmLossLesses[0]):
-                    h = huffman.HuffmanCoding()
+                h = huffman.HuffmanCoding()
 
                 fileName, FileExtension = os.path.splitext(self.fileName)
 
-                outputPath, log = h.decompress(self.fileName, fileName + ".npy", typeFile)
+                outputPath, log = h.decompress(self.fileName, typeFile)
 
                 print(log)
                 showLog.delete('1.0', END)
@@ -183,9 +182,3 @@ app = GUI(root)
 app.setWindow()
 app.drawUI()
 root.mainloop()
-# if __name__ == "__main__":
-#     root = Tk()
-#     app = GUI(root)
-#     app.setWindow()
-#     app.drawUI()
-#     root.mainloop()

@@ -6,10 +6,16 @@ import time
 class LZW:
     def __init__(self):
         self.imageByteArray = None
-            
+
+    def convertImageToBase64(self, image):
+        with open(image, "rb") as f:
+            data = f.read()
+            stringImage = base64.b64encode(data)
+        self.imageByteArray = str(stringImage)[2:]
+
     def encode(self, imageFile):
         self.convertImageToBase64(imageFile)
-        filename, fileExtension = os.path.splitext(imageFile) 
+        filename, fileExtension = os.path.splitext(imageFile)
 
         startEncode = time.time()
         result = []
@@ -35,20 +41,13 @@ class LZW:
 
         fileSaveDic = filename + ".npy"
         np.save(fileSaveDic, newArrayNumpy)
-
-
-        sizeFileInput = os.path.getsize(imageFile)
-        sizeFileOutput = os.path.getsize(fileSaveDic)
-        performance = ((sizeFileInput/sizeFileOutput) - 1)*100
         endEncode = time.time()
         elapsedEncode = endEncode - startEncode
-
-        log = "LZW Compress: \n" + "   Input File: " + imageFile + "\n   Output File: " + fileSaveDic + "\n   Preformance: " + str(performance) + "\n Time Encode: " + str(elapsedEncode)
-
+        log = "LZW: \n" + "   Input File: " + imageFile + "\n   Output File: " + fileSaveDic + "\n Time Encode: " + str(elapsedEncode)
         return  fileSaveDic, log
 
     def decode(self, inputPath, typeFile):
-        filename, fileExtension = os.path.splitext(inputPath) 
+        filename, fileExtension = os.path.splitext(inputPath)
         outputFilename = filename + "_decode" + typeFile
 
         inputCode = list(np.load(inputPath))
@@ -78,21 +77,13 @@ class LZW:
         
         endDecode = time.time()
         elapsedDecode = endDecode - startDecode
-
-        log = "LZW Decompress: \n" + "   Input File: " + inputPath + "\n   Output File: " + outputFilename + "\n Time Decode: " + str(elapsedDecode)
+        log = "LZW: \n" + "   Input File: " + inputPath + "\n   Output File: " + outputFilename + "\n Time Decode: " + str(elapsedDecode)
         return outputFilename, log
-
-    #https://stackoverflow.com/questions/3715493/encoding-an-image-file-with-base64
-    def convertImageToBase64(self, image): #Lưu tối ưu
-        with open(image, "rb") as f:
-            data = f.read()
-            stringImage = base64.b64encode(data)
-        self.imageByteArray = str(stringImage)[2:]
 
 if __name__ == "__main__":
     lzw = LZW()
-    image = "D:/TinhToanDaPhuongTien/hinh/filejpg.jpg"
-    encode = "D:/TinhToanDaPhuongTien/hinh/filejpg.jpg"
+    image = "D:/TinhToanDaPhuongTien/hinh/lena.bmp"
+    encode = "D:/TinhToanDaPhuongTien/hinh/lena.npy"
     re, log = lzw.encode(image)
     print(log)
     re, log = lzw.decode(encode, ".bmp")

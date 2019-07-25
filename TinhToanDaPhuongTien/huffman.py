@@ -3,6 +3,7 @@ import os
 from functools import total_ordering
 import base64
 import numpy as np
+import zipfile
 import time
 
 @total_ordering
@@ -104,17 +105,16 @@ class HuffmanCoding:
 		return b
 
 	def compress(self, imageFile = ""):
-		filename, fileExtension = os.path.splitext(imageFile)
-		
+		filename, fileExtension = os.path.splitext(imageFile) 
+
 		startEncode = time.time()
 		self.imageFile = imageFile
-
-		self.sizeFile = os.path.getsize(self.imageFile)
 
 		self.convertImageToBase64()
 
 		text = self.ImageByteArray.decode()
 
+		#---------------------------------
 		frequency = self.makeFrequencyDict(text)
 		self.makeHeap(frequency)
 		self.margeNodes()
@@ -124,23 +124,36 @@ class HuffmanCoding:
 		paddedEncodedText = self.padEncodedText(encodedText)
 
 		b = self.getByteArray(paddedEncodedText)
+
+		#---------------------------------
 		outputPath = filename + ".bin"
-		output = open(outputPath, "wb")
+
+		fileSaveBits = "huff_bits.bin"
+		output = open(fileSaveBits, "wb")
 		output.write(bytes(b))
 		output.close()
-		
-		sizeFileEncode = os.path.getsize(outputPath)
 
-		performance = ((self.sizeFile/sizeFileEncode) - 1)*100
+		fileSaveDict = "huff_dict" + ".npy"
 
-		fileSaveDic = filename + ".npy"
-		np.save(fileSaveDic, self.reverse_mapping)
+		np.save(fileSaveDict, self.reverse_mapping)
 		endEncode = time.time()
 		elapsedEncode = endEncode - startEncode
 
-		log = "Huffman Compress: \n" + "   Input File: " + imageFile + "\n   Output File: " + outputPath + "\n    Preformance: " + str(performance) + "\n Time Encode: " + str(elapsedEncode)
+		#---------------------------------
 
-		return outputPath, fileSaveDic, log
+		zipf = zipfile.ZipFile(outputPath, 'w', zipfile.ZIP_DEFLATED)
+
+		zipf.write(fileSaveDict)
+		zipf.write(fileSaveBits)
+		zipf.close()
+
+		os.remove(fileSaveBits)
+		os.remove(fileSaveDict)
+		#---------------------------------
+
+		log = "Huffman: \n" + "Input File: " + imageFile + "\n OutputPath: " + outputPath + "\n Time Encode: " + str(elapsedEncode)
+
+		return outputPath, log
 
 	def remove_padding(self, paddedEncodedText):
 		paddedInfo = paddedEncodedText[:8]
@@ -164,17 +177,27 @@ class HuffmanCoding:
 
 		return decodedText
 
-	def decompress(self, input_path, fileDic, typeFile):
-		# print("Decompress " + input_path + "......" ,end = " ", flush = True)
+	def decompress(self, fileEncode, typeFile):
+		with zipfile.ZipFile(fileEncode, 'r') as zip_file:
+			zip_file.extractall("huffman_temp_zip")
 
-		self.reverse_mapping = dict(enumerate(np.load(fileDic).flatten()))
+		fileDict = "huffman_temp_zip\\huff_dict.npy"
+		fileBits = "huffman_temp_zip\\huff_bits.bin"
+		# save np.load
+		np_load_old = np.load
+
+		# modify the default parameters of np.load
+		np.load = lambda *a,**k: np_load_old(*a, allow_pickle=True, **k)
+		#---
+		self.reverse_mapping = dict(enumerate(np.load(fileDict).flatten()))
 		self.reverse_mapping = self.reverse_mapping[0]
-
-		filename, fileExtension = os.path.splitext(input_path)
+		#---
+		np.load = np_load_old
+		filename, fileExtension = os.path.splitext(fileEncode)
 
 		startDecode = time.time()
 		result = ""
-		with open(input_path, 'rb') as f:
+		with open(fileBits, 'rb') as f:
 			bitString = ""
 
 			byte = f.read(1)
@@ -199,14 +222,16 @@ class HuffmanCoding:
 
 		endDecode = time.time()
 		elapsedDecode = endDecode - startDecode
+		log = "Huffman: \n" + "file encode: " + fileEncode +"\n output: " + out + "\n Time Decode: " + str(elapsedDecode)
 
-		log = "Huffman Decompress: \n" + "   Input File: " + input_path + "\n  Output File: " + out + "\n Time Decode: " + str(elapsedDecode)
+		import shutil
+		shutil.rmtree("huffman_temp_zip")
 
 		return out, log
 
 if __name__ == "__main__":
 	h = HuffmanCoding()
-	outputPath, fileDic, log = h.compress("D:/TinhToanDaPhuongTien/hinh/filejpg.jpg")
-	output, log = h.decompress( "D:/TinhToanDaPhuongTien/hinh/lena.bin", 
-				"D:/TinhToanDaPhuongTien/hinh/lena.jpg.npy",
-				".bmp")
+	outputPath, log = h.compress("D:/TinhToanDaPhuongTien/hinh/lena.bmp") 
+	print(log)
+	output, log = h.decompress( "D:/TinhToanDaPhuongTien/hinh/lena.bin", ".bmp") 
+	print(log)
